@@ -214,6 +214,13 @@ module RedmineMorePreviews
     ######################################################################################
     def self.convertible?( filename )
       ext = File.extname( filename ).gsub(/\A\./,"").downcase
+      if ext == 'pdf'
+        return false if ::Setting['plugin_redmine_more_previews']['skip_pdfs'].to_s != '0'
+      end
+      if ::Setting['plugin_redmine_more_previews']['enable_office'].to_s == '0'
+        libre_exts = registered_converters.dig(:libre)&.mime_types&.keys&.map(&:to_s) || []
+        return false if libre_exts.include?(ext)
+      end
       active_extensions.include?(ext)
     end #def
     
@@ -282,8 +289,9 @@ module RedmineMorePreviews
     end #def
     
     def self.active_converters
-      select_active( configured_converters ).
-      select{|key, val| installed?(key)}
+      conv = select_active( configured_converters )
+      conv.delete('libre') if ::Setting['plugin_redmine_more_previews']['enable_office'].to_s == '0'
+      conv.select{|key, val| installed?(key)}
     end #def
     
     def self.active_mime_types

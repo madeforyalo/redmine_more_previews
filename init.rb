@@ -118,6 +118,7 @@
 #       - fixed long standing issue with links in zippy's inline zip file content tables
 # 5.0.9 
 #       - runs on Redmine 6.x
+require_relative "lib/compat/unloadable"
 #-----------------------------------------------------------------------------------------
 # Register plugin
 #-----------------------------------------------------------------------------------------
@@ -131,10 +132,22 @@ Redmine::Plugin.register :redmine_more_previews do
   
   requires_redmine(:version_or_higher => '4')
   
-  settings :default => {'embedding'      => '0',  # use <object><embed>-tag or <iframe>-tag
+  settings :default => {
+                        'embedding'      => '0',  # use <object><embed>-tag or <iframe>-tag
                         'cache_previews' => '1',  # yes, cache previews
                         'debug'          => '0',  # no, do not debug
                         'absolute'       => '0',  # no, use relative paths for iFrame- and embed-tags
+                        'enable_office'  => '1',
+                        'lo_bin'         => '/usr/lib/libreoffice/program/soffice',
+                        'lo_profile'     => '/tmp/libreoffice_profile',
+                        'home_override'  => '/var/www',
+                        'path_override'  => '/usr/bin:/bin',
+                        'tmpdir'         => '/tmp',
+                        'xdg_runtime'    => '/tmp',
+                        'convert_timeout'=> '60',
+                        'pdf_density'    => '150',
+                        'pdf_tool'       => 'pdftoppm',
+                        'skip_pdfs'      => '1'
                        },
            :partial => 'settings/redmine_more_previews/settings'
            
