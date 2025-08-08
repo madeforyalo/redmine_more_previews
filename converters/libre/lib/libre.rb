@@ -29,25 +29,26 @@ class Libre < RedmineMorePreviews::Conversion
   #---------------------------------------------------------------------------------
   LIBRE_OFFICE_BIN = '/usr/lib/libreoffice/program/soffice'.freeze
   PROFILE_PATH     = '/tmp/libreoffice_profile'.freeze
+  LO_ENV = {
+    'HOME'            => '/var/www',
+    'PATH'            => '/usr/bin:/bin',
+    'TMPDIR'          => '/tmp',
+    'XDG_RUNTIME_DIR' => '/tmp',
+    'LANG'            => 'en_US.UTF-8'
+  }.freeze
 
   #---------------------------------------------------------------------------------
   # check: is LibreOffice available?
   #---------------------------------------------------------------------------------
   def status
-    s = run [LIBRE_OFFICE_BIN, '--version']
-    [:text_libre_office_available, s[2] == 0 ]
+    _stdout, _stderr, status = Open3.capture3(LO_ENV, LIBRE_OFFICE_BIN, '--version')
+    [:text_libre_office_available, status.success?]
+  rescue Errno::ENOENT
+    [:text_libre_office_available, false]
   end
 
   def convert
     FileUtils.mkdir_p(PROFILE_PATH)
-
-    env = {
-      'HOME'            => '/var/www',
-      'PATH'            => '/usr/bin:/bin',
-      'TMPDIR'          => '/tmp',
-      'XDG_RUNTIME_DIR' => '/tmp',
-      'LANG'            => 'en_US.UTF-8'
-    }
 
     profile = "file://#{PROFILE_PATH}"
     cmd = [
@@ -58,7 +59,7 @@ class Libre < RedmineMorePreviews::Conversion
       '--outdir', tmpdir
     ]
 
-    stdout_str, stderr_str, status = Open3.capture3(env, *cmd)
+    stdout_str, stderr_str, status = Open3.capture3(LO_ENV, *cmd)
     unless status.success?
       Rails.logger.error("[redmine_more_previews][LibreOffice] exit=#{status.exitstatus} cmd=#{cmd.join(' ')} stdout=#{stdout_str} stderr=#{stderr_str}")
       raise "LibreOffice conversion failed (exit #{status.exitstatus})"
