@@ -14,7 +14,6 @@ The plugin was developed with thread safety in mind. With caching enabled, it sh
 ## Requirements
 - LibreOffice (soffice binary)
 - Java runtime (if required)
-- poppler-utils (pdftoppm) or ImageMagick
 
 ## Compatibility
 - Redmine 6.x
@@ -27,14 +26,6 @@ The plugin was developed with thread safety in mind. With caching enabled, it sh
 2. Preview it in Redmine.
 3. If it fails, check the Redmine logs for the LibreOffice command.
 
-## Configuration
-
-From *Administration → Plugins → Redmine More Previews*, you can configure:
-
-- Enable previews for Office files
-- Paths and environment overrides for LibreOffice
-- Preferred PDF→Image tool and density
-- Skip PDFs to let another plugin handle them
 
 Currently, there exist the following plugins:
 
