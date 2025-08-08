@@ -214,6 +214,7 @@ module RedmineMorePreviews
     ######################################################################################
     def self.convertible?( filename )
       ext = File.extname( filename ).gsub(/\A\./,"").downcase
+      return false if ext == 'pdf'
       active_extensions.include?(ext)
     end #def
     

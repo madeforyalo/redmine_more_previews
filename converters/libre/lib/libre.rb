@@ -4,69 +4,59 @@
 #
 # Copyright © 2020 Stephan Wenzel <stephan.wenzel@drwpatent.de>
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# GPL v2 or later
 #
 
 require 'open3'
 require 'fileutils'
 
 class Libre < RedmineMorePreviews::Conversion
-
   #---------------------------------------------------------------------------------
   # constants
   #---------------------------------------------------------------------------------
   LIBRE_OFFICE_BIN = '/usr/lib/libreoffice/program/soffice'.freeze
-  
+  PROFILE_PATH     = '/tmp/libreoffice_profile'.freeze
+
+  LO_ENV = {
+    'HOME'            => '/var/www',
+    'PATH'            => '/usr/bin:/bin',
+    'TMPDIR'          => '/tmp',
+    'XDG_RUNTIME_DIR' => '/tmp',
+    'LANG'            => 'en_US.UTF-8'
+  }.freeze
+
   #---------------------------------------------------------------------------------
   # check: is LibreOffice available?
   #---------------------------------------------------------------------------------
   def status
-    s = run [LIBRE_OFFICE_BIN, "--version"]
-    [:text_libre_office_available, s[2] == 0 ]
+    _stdout, _stderr, status = Open3.capture3(LO_ENV, LIBRE_OFFICE_BIN, '--version')
+    [:text_libre_office_available, status.success?]
+  rescue Errno::ENOENT
+    [:text_libre_office_available, false]
   end
-  
+
   def convert
-    FileUtils.mkdir_p('/tmp/libreoffice_profile')
+    FileUtils.mkdir_p(PROFILE_PATH)
 
-    env = {
-      'HOME' => '/var/www',
-      'PATH' => '/usr/bin:/bin',
-      'TMPDIR' => '/tmp',
-      'XDG_RUNTIME_DIR' => '/tmp',
-      'LANG' => 'en_US.UTF-8'
-    }
-
+    profile = "file://#{PROFILE_PATH}" # => "file:///tmp/libreoffice_profile"
     cmd = [
-      LIBRE_OFFICE_BIN,
-      '--headless',
+      LIBRE_OFFICE_BIN, '--headless',
+      "-env:UserInstallation=#{profile}",
       '--convert-to', preview_format,
-      '--outdir', tmpdir,
-      '-env:UserInstallation=file:///tmp/libreoffice_profile',
-      source
+      source,
+      '--outdir', tmpdir
     ]
 
-    stdout, stderr, status = Open3.capture3(env, *cmd)
-
+    stdout_str, stderr_str, status = Open3.capture3(LO_ENV, *cmd)
     unless status.success?
-      Rails.logger.error("LibreOffice command failed: #{cmd.join(' ')}")
-      Rails.logger.error("stdout: #{stdout}") unless stdout.to_s.empty?
-      Rails.logger.error("stderr: #{stderr}") unless stderr.to_s.empty?
-      raise ConverterShellError
+      Rails.logger.error(
+        "[redmine_more_previews][LibreOffice] exit=#{status.exitstatus} " \
+        "cmd=#{cmd.join(' ')} stdout=#{stdout_str} stderr=#{stderr_str}"
+      )
+      # Usa la excepción propia del plugin si existe; cae a RuntimeError si no.
+      raise defined?(ConverterShellError) ? ConverterShellError : RuntimeError, "LibreOffice conversion failed"
     end
 
     FileUtils.mv(File.join(tmpdir, outfile), tmptarget)
-  end #def
-  
-end #class
+  end
+end

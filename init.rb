@@ -118,6 +118,7 @@
 #       - fixed long standing issue with links in zippy's inline zip file content tables
 # 5.0.9 
 #       - runs on Redmine 6.x
+require_relative "lib/compat/unloadable"
 #-----------------------------------------------------------------------------------------
 # Register plugin
 #-----------------------------------------------------------------------------------------
