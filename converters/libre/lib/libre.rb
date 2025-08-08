@@ -4,31 +4,19 @@
 #
 # Copyright © 2020 Stephan Wenzel <stephan.wenzel@drwpatent.de>
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+# GPL v2 or later
 #
 
 require 'open3'
 require 'fileutils'
 
 class Libre < RedmineMorePreviews::Conversion
-
   #---------------------------------------------------------------------------------
   # constants
   #---------------------------------------------------------------------------------
   LIBRE_OFFICE_BIN = '/usr/lib/libreoffice/program/soffice'.freeze
   PROFILE_PATH     = '/tmp/libreoffice_profile'.freeze
+
   LO_ENV = {
     'HOME'            => '/var/www',
     'PATH'            => '/usr/bin:/bin',
@@ -50,7 +38,7 @@ class Libre < RedmineMorePreviews::Conversion
   def convert
     FileUtils.mkdir_p(PROFILE_PATH)
 
-    profile = "file://#{PROFILE_PATH}"
+    profile = "file://#{PROFILE_PATH}" # => "file:///tmp/libreoffice_profile"
     cmd = [
       LIBRE_OFFICE_BIN, '--headless',
       "-env:UserInstallation=#{profile}",
@@ -61,11 +49,14 @@ class Libre < RedmineMorePreviews::Conversion
 
     stdout_str, stderr_str, status = Open3.capture3(LO_ENV, *cmd)
     unless status.success?
-      Rails.logger.error("[redmine_more_previews][LibreOffice] exit=#{status.exitstatus} cmd=#{cmd.join(' ')} stdout=#{stdout_str} stderr=#{stderr_str}")
-      raise "LibreOffice conversion failed (exit #{status.exitstatus})"
+      Rails.logger.error(
+        "[redmine_more_previews][LibreOffice] exit=#{status.exitstatus} " \
+        "cmd=#{cmd.join(' ')} stdout=#{stdout_str} stderr=#{stderr_str}"
+      )
+      # Usa la excepción propia del plugin si existe; cae a RuntimeError si no.
+      raise defined?(ConverterShellError) ? ConverterShellError : RuntimeError, "LibreOffice conversion failed"
     end
 
     FileUtils.mv(File.join(tmpdir, outfile), tmptarget)
-  end #def
-
-end #class
+  end
+end
