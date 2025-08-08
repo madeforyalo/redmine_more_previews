@@ -19,12 +19,15 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+require 'open3'
+require 'fileutils'
+
 class Libre < RedmineMorePreviews::Conversion
 
   #---------------------------------------------------------------------------------
   # constants
   #---------------------------------------------------------------------------------
-  LIBRE_OFFICE_BIN = 'soffice'.freeze
+  LIBRE_OFFICE_BIN = '/usr/lib/libreoffice/program/soffice'.freeze
   
   #---------------------------------------------------------------------------------
   # check: is LibreOffice available?
@@ -35,20 +38,35 @@ class Libre < RedmineMorePreviews::Conversion
   end
   
   def convert
-  
-    Dir.mktmpdir do |tdir| 
-    user_installation = File.join(tdir, "user_installation")
-    command(cd + join + soffice( source, user_installation ) + join + move(thisdir(outfile)) )
+    FileUtils.mkdir_p('/tmp/libreoffice_profile')
+
+    env = {
+      'HOME' => '/var/www',
+      'PATH' => '/usr/bin:/bin',
+      'TMPDIR' => '/tmp',
+      'XDG_RUNTIME_DIR' => '/tmp',
+      'LANG' => 'en_US.UTF-8'
+    }
+
+    cmd = [
+      LIBRE_OFFICE_BIN,
+      '--headless',
+      '--convert-to', preview_format,
+      '--outdir', tmpdir,
+      '-env:UserInstallation=file:///tmp/libreoffice_profile',
+      source
+    ]
+
+    stdout, stderr, status = Open3.capture3(env, *cmd)
+
+    unless status.success?
+      Rails.logger.error("LibreOffice command failed: #{cmd.join(' ')}")
+      Rails.logger.error("stdout: #{stdout}") unless stdout.to_s.empty?
+      Rails.logger.error("stderr: #{stderr}") unless stderr.to_s.empty?
+      raise ConverterShellError
     end
-    
-  end #def
-  
-  def soffice( src, user_installation )
-    if Redmine::Platform.mswin?
-    "#{LIBRE_OFFICE_BIN} --headless --convert-to #{preview_format} --outdir #{shell_quote tmpdir} #{shell_quote src}"
-    else
-    "#{LIBRE_OFFICE_BIN} --headless --convert-to #{preview_format} --outdir #{shell_quote tmpdir} -env:UserInstallation=file://#{user_installation} #{shell_quote src}"
-    end
+
+    FileUtils.mv(File.join(tmpdir, outfile), tmptarget)
   end #def
   
 end #class
