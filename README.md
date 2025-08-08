@@ -11,6 +11,21 @@ To preview files this plugin converts the previewed file content to either
 The appropriate conversion type(s) is/are up to the plugin developer. The available conversion option can be chosen on the plugin configuration page. 
 The plugin was developed with thread safety in mind. With caching enabled, it should stand even higher loads.
 
+## Requirements
+- LibreOffice (soffice binary)
+- Java runtime (if required)
+
+## Compatibility
+- Redmine 6.x
+- Rails 7
+
+> For Nginx, serve /plugin_assets directly and add MIME types for .mjs and .wasm if an external JS viewer is used.
+
+## Quick test
+1. Upload a .docx file.
+2. Preview it in Redmine.
+3. If it fails, check the Redmine logs for the LibreOffice command.
+
 Currently, there exist the following plugins:
 
 ---

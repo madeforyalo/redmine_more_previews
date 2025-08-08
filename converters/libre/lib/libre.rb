@@ -19,36 +19,52 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+require 'open3'
+require 'fileutils'
+
 class Libre < RedmineMorePreviews::Conversion
 
   #---------------------------------------------------------------------------------
   # constants
   #---------------------------------------------------------------------------------
-  LIBRE_OFFICE_BIN = 'soffice'.freeze
-  
+  LIBRE_OFFICE_BIN = '/usr/lib/libreoffice/program/soffice'.freeze
+  PROFILE_PATH     = '/tmp/libreoffice_profile'.freeze
+
   #---------------------------------------------------------------------------------
   # check: is LibreOffice available?
   #---------------------------------------------------------------------------------
   def status
-    s = run [LIBRE_OFFICE_BIN, "--version"]
+    s = run [LIBRE_OFFICE_BIN, '--version']
     [:text_libre_office_available, s[2] == 0 ]
   end
-  
+
   def convert
-  
-    Dir.mktmpdir do |tdir| 
-    user_installation = File.join(tdir, "user_installation")
-    command(cd + join + soffice( source, user_installation ) + join + move(thisdir(outfile)) )
+    FileUtils.mkdir_p(PROFILE_PATH)
+
+    env = {
+      'HOME'            => '/var/www',
+      'PATH'            => '/usr/bin:/bin',
+      'TMPDIR'          => '/tmp',
+      'XDG_RUNTIME_DIR' => '/tmp',
+      'LANG'            => 'en_US.UTF-8'
+    }
+
+    profile = "file://#{PROFILE_PATH}"
+    cmd = [
+      LIBRE_OFFICE_BIN, '--headless',
+      "-env:UserInstallation=#{profile}",
+      '--convert-to', preview_format,
+      source,
+      '--outdir', tmpdir
+    ]
+
+    stdout_str, stderr_str, status = Open3.capture3(env, *cmd)
+    unless status.success?
+      Rails.logger.error("[redmine_more_previews][LibreOffice] exit=#{status.exitstatus} cmd=#{cmd.join(' ')} stdout=#{stdout_str} stderr=#{stderr_str}")
+      raise "LibreOffice conversion failed (exit #{status.exitstatus})"
     end
-    
+
+    FileUtils.mv(File.join(tmpdir, outfile), tmptarget)
   end #def
-  
-  def soffice( src, user_installation )
-    if Redmine::Platform.mswin?
-    "#{LIBRE_OFFICE_BIN} --headless --convert-to #{preview_format} --outdir #{shell_quote tmpdir} #{shell_quote src}"
-    else
-    "#{LIBRE_OFFICE_BIN} --headless --convert-to #{preview_format} --outdir #{shell_quote tmpdir} -env:UserInstallation=file://#{user_installation} #{shell_quote src}"
-    end
-  end #def
-  
+
 end #class
