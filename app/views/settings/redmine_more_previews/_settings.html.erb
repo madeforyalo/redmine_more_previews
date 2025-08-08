@@ -49,7 +49,7 @@
 </fieldset>
 
 <fieldset class="box tabular settings"><legend><%= l(:label_debug) %></legend>
-  <p>  
+  <p>
     <label><%= l(:label_debug)  %></label>
       <%= check_box_tag 'settings[debug]', 1, (settings["debug"] == "1" ) %>
   </p>
@@ -59,6 +59,66 @@
     <span id="help_redmine_more_previews_debug" class="info" style="display: none;">
       <em class="info"><%= l(:text_help_redmine_more_previews_debug) %></em>
     </span>
+  </p>
+</fieldset>
+
+<fieldset class="box tabular settings"><legend>LibreOffice</legend>
+  <p>
+    <label>Enable previews for Office files</label>
+      <%= check_box_tag 'settings[enable_office]', 1, (settings["enable_office"] != "0" ) %>
+  </p>
+  <p>
+    <label>LibreOffice binary path</label>
+      <%= text_field_tag 'settings[lo_bin]', settings["lo_bin"] %>
+  </p>
+  <p>
+    <label>LO UserInstallation dir</label>
+      <%= text_field_tag 'settings[lo_profile]', settings["lo_profile"] %>
+  </p>
+  <p>
+    <label>HOME override for converter</label>
+      <%= text_field_tag 'settings[home_override]', settings["home_override"] %>
+  </p>
+  <p>
+    <label>PATH override</label>
+      <%= text_field_tag 'settings[path_override]', settings["path_override"] %>
+  </p>
+  <p>
+    <label>TMPDIR</label>
+      <%= text_field_tag 'settings[tmpdir]', settings["tmpdir"] %>
+  </p>
+  <p>
+    <label>XDG_RUNTIME_DIR</label>
+      <%= text_field_tag 'settings[xdg_runtime]', settings["xdg_runtime"] %>
+  </p>
+  <p>
+    <label>Convert timeout (seconds)</label>
+      <%= number_field_tag 'settings[convert_timeout]', settings["convert_timeout"], :min => 1 %>
+  </p>
+  <p>
+    <label>Office → PDF density for image</label>
+      <%= number_field_tag 'settings[pdf_density]', settings["pdf_density"], :min => 1 %>
+  </p>
+  <p>
+    <label>Preferred PDF→Image tool</label>
+      <%= select_tag 'settings[pdf_tool]', options_for_select([['pdftoppm','pdftoppm'],['convert','convert']], settings["pdf_tool"]) %>
+  </p>
+  <p>
+    <label>Skip PDFs (handled by external PDF viewer plugin)</label>
+      <%= check_box_tag 'settings[skip_pdfs]', 1, (settings["skip_pdfs"] != "0" ) %>
+  </p>
+  <hr>
+  <p>
+    <% lo_path = settings["lo_bin"].to_s.empty? ? '/usr/lib/libreoffice/program/soffice' : settings["lo_bin"] %>
+    LibreOffice: <span class="icon-only <%= File.exist?(lo_path) ? 'icon-ok' : 'icon-error' %>"></span> <code><%= lo_path %></code>
+  </p>
+  <p>
+    <% pdftoppm_path = `which pdftoppm 2>/dev/null`.strip %>
+    pdftoppm: <span class="icon-only <%= pdftoppm_path.empty? ? 'icon-error' : 'icon-ok' %>"></span>
+  </p>
+  <p>
+    <% convert_path = `which convert 2>/dev/null`.strip %>
+    convert: <span class="icon-only <%= convert_path.empty? ? 'icon-error' : 'icon-ok' %>"></span>
   </p>
 </fieldset>
 

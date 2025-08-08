@@ -26,6 +26,7 @@ The plugin was developed with thread safety in mind. With caching enabled, it sh
 2. Preview it in Redmine.
 3. If it fails, check the Redmine logs for the LibreOffice command.
 
+
 Currently, there exist the following plugins:
 
 ---
